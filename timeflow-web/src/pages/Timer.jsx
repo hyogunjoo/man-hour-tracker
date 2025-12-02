@@ -10,6 +10,7 @@ import {
   Tooltip,
   CartesianGrid,
   ReferenceLine,
+  ResponsiveContainer, // 추가
 } from "recharts";
 
 // HH:MM:SS 포맷
@@ -19,6 +20,19 @@ function formatTime(seconds) {
   const m = Math.floor((total % 3600) / 60);
   const s = total % 60;
   return [h, m, s].map((v) => String(v).padStart(2, "0")).join(":");
+}
+
+// "2시간 30분" 형식 포맷 (초 → 시/분)
+function formatDurationHM(totalSeconds) {
+  const sec = Math.max(0, Math.floor(totalSeconds || 0));
+  const totalMinutes = Math.round(sec / 60);
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+
+  if (h > 0 && m > 0) return `${h}시간 ${m}분`;
+  if (h > 0) return `${h}시간`;
+  if (m > 0) return `${m}분`;
+  return "0시간";
 }
 
 // YYYY-MM-DD (로컬 타임 기준)
@@ -77,7 +91,8 @@ export default function TimerPage() {
       ? ""
       : String(currentTagId);
 
-  const currentTag = tags.find((t) => String(t.id) === currentTagIdStr) || null;
+  const currentTag =
+    tags.find((t) => String(t.id) === currentTagIdStr) || null;
 
   const isTagSelected = currentTagIdStr !== "";
 
@@ -360,8 +375,7 @@ export default function TimerPage() {
               ) : (
                 <ul className="space-y-1 max-h-64 overflow-auto pr-1">
                   {recentSessions.map((s) => {
-                    const tagIdRaw =
-                      s.tag?.id ?? s.tagId ?? s.tag ?? null;
+                    const tagIdRaw = s.tag?.id ?? s.tagId ?? s.tag ?? null;
                     const tagIdStr =
                       tagIdRaw == null ? null : String(tagIdRaw);
                     const tag =
@@ -370,9 +384,7 @@ export default function TimerPage() {
                     const started = s.startedAt
                       ? new Date(s.startedAt)
                       : null;
-                    const ended = s.endedAt
-                      ? new Date(s.endedAt)
-                      : null;
+                    const ended = s.endedAt ? new Date(s.endedAt) : null;
                     const duration = Math.max(
                       0,
                       Number.isFinite(s.durationSeconds)
@@ -386,9 +398,7 @@ export default function TimerPage() {
 
                     const timeRange =
                       started && ended
-                        ? `${started
-                            .toTimeString()
-                            .slice(0, 5)} ~ ${ended
+                        ? `${started.toTimeString().slice(0, 5)} ~ ${ended
                             .toTimeString()
                             .slice(0, 5)}`
                         : started
@@ -454,7 +464,9 @@ export default function TimerPage() {
                   </div>
                   <div className="text-[11px] text-slate-500 mt-1">
                     {masterGoalHours
-                      ? `달성률 ${Math.round(masteryProgress * 1000) / 10}%`
+                      ? `달성률 ${
+                          Math.round(masteryProgress * 1000) / 10
+                        }%`
                       : "목표 시간이 설정되어 있지 않습니다."}
                   </div>
                 </div>
@@ -484,9 +496,7 @@ export default function TimerPage() {
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[11px] text-slate-400">
                     오늘 목표 달성도
-                    {dailyGoalHours
-                      ? ` (목표 ${dailyGoalHours}h)`
-                      : ""}
+                    {dailyGoalHours ? ` (목표 ${dailyGoalHours}h)` : ""}
                   </span>
                   <span className="text-[11px] text-slate-300 font-mono">
                     {formatTime(todayGoalSecondsWithRunning)}
@@ -517,64 +527,66 @@ export default function TimerPage() {
                 </span>
               </div>
 
-              <div className="w-full overflow-x-auto">
-                <LineChart
-                  width={480}
-                  height={160}
-                  data={trend7Days}
-                  margin={{ top: 10, right: 20, bottom: 5, left: 0 }}
-                >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="#1f2937"
-                  />
-                  <XAxis
-                    dataKey="label"
-                    tick={{ fontSize: 10, fill: "#9ca3af" }}
-                    axisLine={{ stroke: "#4b5563" }}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    tick={{ fontSize: 10, fill: "#9ca3af" }}
-                    axisLine={{ stroke: "#4b5563" }}
-                    tickLine={false}
-                    tickFormatter={(v) => `${v.toFixed(1)}h`}
-                  />
-                  <Tooltip
-                    formatter={(value) => [
-                      `${value.toFixed(2)} 시간`,
-                      "합계",
-                    ]}
-                    labelFormatter={(label, payload) => {
-                      if (!payload || !payload[0]) return label;
-                      const dKey = payload[0].payload.dateKey;
-                      return `${label} (${dKey})`;
-                    }}
-                    contentStyle={{
-                      backgroundColor: "#020617",
-                      border: "1px solid #1f2937",
-                      fontSize: 11,
-                    }}
-                    itemStyle={{ color: "#e5e7eb" }}
-                    labelStyle={{ color: "#9ca3af" }}
-                  />
-                  {dailyGoalHours > 0 && (
-                    <ReferenceLine
-                      y={dailyGoalHours}
-                      stroke="#4b5563"
-                      strokeDasharray="4 4"
+              {/* 스크롤 없애고 반응형으로 조정 */}
+              <div className="w-full overflow-x-hidden">
+                <ResponsiveContainer width="100%" height={180}>
+                  <LineChart
+                    data={trend7Days}
+                    margin={{ top: 10, right: 16, bottom: 4, left: 0 }}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="#1f2937"
                     />
-                  )}
-                  <Line
-                    type="monotone"
-                    dataKey="hours"
-                    stroke="#3b82f6"
-                    strokeWidth={2}
-                    dot={{ r: 3 }}
-                    activeDot={{ r: 5 }}
-                    isAnimationActive={false}
-                  />
-                </LineChart>
+                    <XAxis
+                      dataKey="label"
+                      tick={{ fontSize: 10, fill: "#9ca3af" }}
+                      axisLine={{ stroke: "#4b5563" }}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 10, fill: "#9ca3af" }}
+                      axisLine={{ stroke: "#4b5563" }}
+                      tickLine={false}
+                      // hours(숫자)를 받아서 "2시간 30분" 형식으로 표시
+                      tickFormatter={(v) => formatDurationHM(v * 3600)}
+                    />
+                    <Tooltip
+                      formatter={(value) => {
+                        // value는 hours 단위 → seconds로 변환 후 포맷
+                        return [formatDurationHM(value * 3600), "총 시간"];
+                      }}
+                      labelFormatter={(label, payload) => {
+                        if (!payload || !payload[0]) return label;
+                        const dKey = payload[0].payload.dateKey;
+                        return `${label} (${dKey})`;
+                      }}
+                      contentStyle={{
+                        backgroundColor: "#020617",
+                        border: "1px solid #1f2937",
+                        fontSize: 11,
+                      }}
+                      itemStyle={{ color: "#e5e7eb" }}
+                      labelStyle={{ color: "#9ca3af" }}
+                    />
+                    {dailyGoalHours > 0 && (
+                      <ReferenceLine
+                        y={dailyGoalHours}
+                        stroke="#4b5563"
+                        strokeDasharray="4 4"
+                      />
+                    )}
+                    <Line
+                      type="monotone"
+                      dataKey="hours"
+                      stroke="#3b82f6"
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                      activeDot={{ r: 5 }}
+                      isAnimationActive={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
             </div>
           </section>
