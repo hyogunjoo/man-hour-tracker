@@ -172,7 +172,7 @@ const {
         );
 
         setTimeout(() => {
-          window.location.reload();
+          window.location.replace("/");
         }, 800);
       } catch (e) {
         console.error("임포트 중 오류:", e);
