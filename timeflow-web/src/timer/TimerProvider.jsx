@@ -208,7 +208,7 @@ export function TimerProvider({ children }) {
 
     const newSession = {
       id: `${now}`,
-      tagId: currentTagId,
+      tag: currentTagId,
       startedAt: sessionStartAt,
       endedAt: new Date(now).toISOString(),
       durationSeconds: totalSeconds,
